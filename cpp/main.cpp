@@ -13,15 +13,108 @@
 
 #include "utils.hpp"
 
+/*
+    There are a total of numCourses courses you have to take, labeled from 
+    0 to numCourses - 1. You are given an array prerequisites where 
+    prerequisites[i] = [ai, bi] indicates that you must take course bi first 
+    if you want to take course ai.
+
+        * For example, the pair [0, 1], indicates that to take course 0 you 
+          have to first take course 1.
+    
+    Return true if you can finish all courses. Otherwise, return false.
+
+    Constraints:
+
+        * 1 <= numCourses <= 2000
+        * 0 <= prerequisites.length <= 5000
+        * prerequisites[i].length == 2
+        * 0 <= ai, bi < numCourses
+        * All the pairs prerequisites[i] are unique.
+*/
+
 class Solution {
+        using dependencies_t = vector<int>;
+        using courses_t = unordered_map<int, dependencies_t>;
+        using visited_t = unordered_set<int>;
+
+        static bool helper(
+            courses_t& courses
+            , int course
+            , visited_t& visited
+        ) noexcept {
+            if (visited.contains(course)) { return false; }
+            
+            auto coursesIter = courses.find(course);
+            if (courses.end() == coursesIter) { return true; }
+            
+            dependencies_t const& dependencies = coursesIter->second;
+            if (!dependencies.empty()) {
+                auto const courseIter = visited.insert(course).first;
+
+                for (auto const dependency : dependencies) {
+                    if (!helper(courses, dependency, visited)) {
+                        return false;
+                    }
+                }
+
+                visited.erase(courseIter);
+            }
+
+            courses.erase(coursesIter);
+            
+            return true;
+        }
+
 public:
+    /*
+        The prerequisites create a dependency tree.
+        Return true only when all branches in the tree contain no cycles.
+        
+        Populate a dictionary with all courses.  Keys are prerequisites[0],
+        values are arrays composed of prerequisites[1], which handles 
+        courses with more than one prerequisite.  Use a recursive depth
+        first search to visit each individual branch of the prerequisite
+        tree.  Remove the branch (or sub-branch) from the tree after 
+        visiting it (DP).  As each node in the branch is visited, check
+        to see if it was already visited.  If it was then there is a cyclic
+        dependency in the branch, which results in false being returned.
+        Add branch nodes to the visited collection as the branch is traversed
+        from root to tip and remove the added nodes as the stack unwinds back
+        from tip to root (backtracking).
+
+        Time = O(n)
+               n = number of prerequisites.  Prerequisite tree branch nodes
+                   are removed from the prerequisite tree after being visited,
+                   so the maximum number of nodes that can ever possibly be 
+                   visited is n.
+
+        Space = O(n)
+                n = maximum call stack depth when all prerequisites reference
+                    each other and create a linear chain.
+    */
     bool canFinish(int numCourses, vector<vector<int>>& prerequisites) {
+        courses_t courses{};
+        for (auto const& prerequisite : prerequisites) {
+            auto const course = prerequisite[0];
+            auto const dependency = prerequisite[1];
+            auto coursesIter = courses.find(course);
+            if (courses.end() != coursesIter) {
+                coursesIter->second.push_back(dependency);
+            } else {
+                courses.insert(make_pair(course, dependencies_t{dependency}));
+            }
+        }
 
-//
-//!\todo TODO: >>> Under Construction <<<
-//
-return false;
+        visited_t visited{};
+        while (!courses.empty()) {
+            auto const course = courses.begin()->first;
+            if (!helper(courses, course, visited)) {
+                return false;
+            }
+        }
 
+        return true;
     }
 };
 
