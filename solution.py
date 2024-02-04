@@ -27,7 +27,7 @@ from typing import Set
         * All the pairs prerequisites[i] are unique.
 """
 
-class Solution:
+class Solution1_DFS:
     """
         The prerequisites create a dependency tree.
         Return true only when all branches in the tree contain no cycles.
@@ -82,6 +82,73 @@ class Solution:
                 return False
         
         return True
+
+class Solution2_TopologicalSort:
+    """
+        The prerequisites create a dependency tree.
+        Return true only when all branches in the tree contain no cycles.
+        
+        Use a topological sort to detect cycles.
+          1) Create an adjacency list from the prerequisites.
+          2) Count the number of edges coming in to a node (it's in-degree).
+          3) Push the nodes with an in-degree of zero (0) on to the que.
+          4) While the queue is not empty:
+        4.1)   Pop node ('A') off of que.
+        4.2)   Decrement the in-degree of each node referenced by 'A', i.e.
+               each node that can be reached by following an edge from 'A'.
+        4.3)   If the in-degree of a node becomes zero (0), push the node 
+               on to the que.
+          5) If the number of nodes pushed to or popped from the que is equal
+             to the number of nodes in the graph then there are no cycles in
+             the dependency tree and the result is true.
+
+        Time = O(V + V + E + V + V) => O(4V + E) => O(V+E)
+               V = vertex count == numCourses
+               E = edge count == len(prerequisites)
+               Term 1: inDegrees allocation.
+               Term 2: graph allocation.
+               Term 3: graph population.
+               Term 4: queue initialization.
+               Term 5: queue processing.
+
+        Space = O(V + V*V + V) => O(2V + V**2) => O(V**2)
+                V = vertex count == numCourses
+                Term 1: inDegrees capacity
+                Term 2: graph capacity (all nodes could reference each other).
+                Term 3: queue capacity (all nodes when none reference any other).
+    """
+    def canFinish(self, numCourses: int, prerequisites: List[List[int]]) -> bool:
+        inDegrees = [0] * numCourses # In-degree's for each node.
+        graph = [[] for _ in range(numCourses)];
+        for edge in prerequisites:
+            node = edge[0]
+            tgt = edge[1]
+
+            # Add node to graph.
+            graph[node].append(tgt)
+            
+            # Increment in-degree for each outgoing edge from node.
+            inDegrees[tgt] += 1
+        
+        que = deque()
+        
+        # Initialize queue with nodes that have a zero (0) in-degree.
+        for node in range(len(inDegrees)):
+            if 0 == inDegrees[node]:
+                que.append(node)
+
+        processCount = len(que) # Number of nodes processed by the queue.
+        
+        # Process the queue.
+        while 0 < len(que):
+            node = que.popleft()
+            for tgt in graph[node]:
+                inDegrees[tgt] -= 1
+                if 0 == inDegrees[tgt]:
+                    que.append(tgt)
+                    processCount += 1
+        
+        return numCourses == processCount
 
 def test1(solution):
     numCourses = 2
@@ -200,13 +267,22 @@ def test8(solution):
     assert(expected == result)
 
 if "__main__" == __name__:
-    test1(Solution())
-    test2(Solution())
-    test3(Solution())
-    test4(Solution())
-    test5(Solution())
-    test6(Solution())
-    test7(Solution())
-    test8(Solution())
+    test1(Solution1_DFS())
+    test2(Solution1_DFS())
+    test3(Solution1_DFS())
+    test4(Solution1_DFS())
+    test5(Solution1_DFS())
+    test6(Solution1_DFS())
+    test7(Solution1_DFS())
+    test8(Solution1_DFS())
+
+    test1(Solution2_TopologicalSort())
+    test2(Solution2_TopologicalSort())
+    test3(Solution2_TopologicalSort())
+    test4(Solution2_TopologicalSort())
+    test5(Solution2_TopologicalSort())
+    test6(Solution2_TopologicalSort())
+    test7(Solution2_TopologicalSort())
+    test8(Solution2_TopologicalSort())
 
 # End of "solution.py".
